@@ -1,0 +1,14 @@
+CREATE TABLE transactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT NOT NULL,
+  description TEXT NOT NULL,
+  amount REAL NOT NULL,
+  source_account TEXT NOT NULL,
+  accounted INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE filters (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  pattern TEXT NOT NULL
+);
