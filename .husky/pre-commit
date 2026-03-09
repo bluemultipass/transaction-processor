@@ -1,12 +1,9 @@
 #!/bin/sh
 set -e
 
-# Rust checks
-cd src-tauri
-cargo fmt --check
-cargo clippy -- -D warnings
-cd ..
+# Rust checks (subshell keeps cd scoped)
+(cd src-tauri && cargo fmt --check && cargo clippy -- -D warnings)
 
 # Frontend checks
-pnpm eslint --max-warnings 0 src/
-pnpm prettier --check src/
+pnpm lint
+pnpm format:check
