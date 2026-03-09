@@ -10,8 +10,7 @@ use tauri::Manager;
 use tauri_specta::Builder;
 
 fn main() {
-    let specta_builder = Builder::<tauri::Wry>::new()
-        .commands(tauri_specta::collect_commands![]);
+    let specta_builder = Builder::<tauri::Wry>::new().commands(tauri_specta::collect_commands![]);
 
     #[cfg(debug_assertions)]
     specta_builder
