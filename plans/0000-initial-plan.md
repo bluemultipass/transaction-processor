@@ -283,12 +283,12 @@ Files:
 Note: There is no stable unique ID per transaction from the bank, and the same merchant/amount can legitimately appear multiple times on the same day. Therefore we do not auto-deduplicate. Instead we surface potential overlap and let the user decide.
 
 Changes:
-- In `import_transactions` command: after parsing, query the DB for the min/max date of the incoming batch
-- If that date range overlaps any existing stored transactions (same `source_account`), return them alongside the import result as `possible_duplicates: Vec<Transaction>`
-- Update `ImportResult` to include `possible_duplicates`
-- Frontend (Transactions screen): if `possible_duplicates` is non-empty, show a dismissable warning panel listing the suspect rows
+- In `import_transactions` command: after parsing, query the DB for existing transactions in the same `source_account` and date range as the incoming batch
+- For each incoming transaction, check whether an identical `(date, description, amount, source_account)` tuple already exists in the DB; collect matches as `possible_duplicates`
+- Update `ImportResult` to include `possible_duplicates: Vec<Transaction>`
+- Frontend (Transactions screen): if `possible_duplicates` is non-empty, show a dismissable warning panel listing only those matched rows
 
-**Done when:** Uploading the same CSV twice surfaces the overlap warning with the affected transactions listed.
+**Done when:** Uploading the same CSV twice surfaces only the transactions that appear in both the upload and the DB — not every transaction in the overlapping date range.
 
 ---
 
