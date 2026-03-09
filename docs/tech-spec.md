@@ -263,7 +263,7 @@ To enable it in `tauri.conf.json`:
 **Install experience:**
 1. Download `transaction-processor_x.y.z_x64-setup.exe` from the GitHub release
 2. Run it — Windows may show a SmartScreen warning ("Unknown publisher") since the binary isn't signed; click **More info → Run anyway**
-3. Short wizard: choose install directory (defaults to `%LOCALAPPDATA%\Programs\...` — no admin rights needed), optionally add a desktop shortcut
+3. Short wizard: choose install directory (defaults to `%LOCALAPPDATA%\Programs\transaction-processor\`, i.e. `C:\Users\<you>\AppData\Local\Programs\transaction-processor\` — this is user-scoped, **not** `Program Files`, so no UAC prompt or admin rights are needed), optionally add a desktop shortcut
 4. App launches from Start Menu or shortcut
 
 **Uninstall:** Add/Remove Programs → transaction-processor, or run the uninstaller from the install directory.
