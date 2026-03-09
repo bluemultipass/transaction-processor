@@ -283,8 +283,8 @@ Files:
 Note: There is no stable unique ID per transaction from the bank, and the same merchant/amount can legitimately appear multiple times on the same day. Therefore we do not auto-deduplicate. Instead we surface potential overlap and let the user decide.
 
 Changes:
-- In `import_transactions` command: after parsing, query the DB for existing transactions in the same `source_account` and date range as the incoming batch
-- For each incoming transaction, check whether an identical `(date, description, amount, source_account)` tuple already exists in the DB; collect matches as `possible_duplicates`
+- In `import_transactions` command: after parsing, fetch all existing DB transactions for the same `source_account` within the incoming batch's min/max date range (single query)
+- Intersect in memory: collect DB rows whose `(date, description, amount)` matches any incoming transaction as `possible_duplicates`
 - Update `ImportResult` to include `possible_duplicates: Vec<Transaction>`
 - Frontend (Transactions screen): if `possible_duplicates` is non-empty, show a dismissable warning panel listing only those matched rows
 
