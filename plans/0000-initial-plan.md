@@ -55,7 +55,6 @@ Changes:
     date TEXT NOT NULL,
     description TEXT NOT NULL,
     amount REAL NOT NULL,
-    source_account TEXT NOT NULL,
     accounted INTEGER NOT NULL DEFAULT 0
   );
 
@@ -89,18 +88,18 @@ Changes:
 
 ## Step 5 — CSV parsing logic
 
-**Goal:** Parse both Chase CSV formats; filter to spend-only; deduplicate within session.
+**Goal:** Parse both Chase CSV formats and filter to spend-only transactions.
 
 Files:
 - `src-tauri/src/csv/mod.rs`:
   - `detect_format(headers: &[&str]) -> CsvFormat` (Checking | CreditCard)
-  - `parse_transactions(path: &Path, source_account: &str) -> Result<Vec<ParsedTransaction>, AppError>`
+  - `parse_transactions(path: &Path) -> Result<Vec<ParsedTransaction>, AppError>`
   - Filters: checking keeps negative Amount; credit keeps negative Amount (Sale type)
-  - Dedup within a Vec: retain only first occurrence per `(date, description, amount)` composite key
-- `ParsedTransaction` struct: `{ date, description, amount (absolute f64), source_account }`
+  - No in-batch deduplication — all matching rows are returned as-is
+- `ParsedTransaction` struct: `{ date, description, amount (absolute f64) }`
 - Inline `#[cfg(test)]` with sample CSV strings for both formats
 
-**Done when:** `cargo test` passes with unit tests covering both formats, spend filtering, and dedup.
+**Done when:** `cargo test` passes with unit tests covering both formats and spend filtering.
 
 ---
 
@@ -116,10 +115,9 @@ Files:
   - `Transaction` struct (all DB columns) — `#[derive(Serialize, specta::Type)]`
 - `src-tauri/src/commands/transactions.rs`:
   - `import_transactions(paths: Vec<String>) -> Result<ImportResult, AppError>`
-    - Parse all files, merge, deduplicate across files (same composite key logic)
-    - Warn on duplicates found in DB from prior sessions (query existing, compare)
-    - Store new ones
-    - Returns `ImportResult { imported: usize, duplicates_skipped: usize, cross_session_warnings: usize }`
+    - Parse all files and merge into one list
+    - Insert all transactions; duplicate detection deferred to Step 16
+    - Returns `ImportResult { imported: usize }`
   - `list_transactions(date_from: Option<String>, date_to: Option<String>) -> Result<Vec<Transaction>, AppError>`
 - Register both commands with tauri-specta, regenerate `src/bindings.ts`
 
@@ -277,6 +275,22 @@ Files:
 
 ---
 
+## Step 16 — Duplicate import detection
+
+**Goal:** Warn the user when a CSV upload covers a date range that already has data in the DB, surfacing transactions that look like potential duplicates for manual review.
+
+Note: There is no stable unique ID per transaction from the bank, and the same merchant/amount can legitimately appear multiple times on the same day. Therefore we do not auto-deduplicate. Instead we surface potential overlap and let the user decide.
+
+Changes:
+- In `import_transactions` command: after parsing, fetch all existing DB transactions within the incoming batch's min/max date range (single query)
+- Intersect in memory: collect DB rows whose `(date, description, amount)` matches any incoming transaction as `possible_duplicates`
+- Update `ImportResult` to include `possible_duplicates: Vec<Transaction>`
+- Frontend (Transactions screen): if `possible_duplicates` is non-empty, show a dismissable warning panel listing only those matched rows
+
+**Done when:** Uploading the same CSV twice surfaces only the transactions that appear in both the upload and the DB — not every transaction in the overlapping date range.
+
+---
+
 ## Sequencing Summary
 
 ```
@@ -295,6 +309,7 @@ Files:
 13. Capabilities  → permissions locked down
 14. FE tests      → vitest suite passing
 15. CI            → workflows committed
+16. Dupe warning  → overlap detection surfaced in UI
 ```
 
 Each step is self-contained: the backend steps (5–8) can be verified with `cargo test` alone before touching the frontend. Steps 9–12 build the UI incrementally so each screen can be manually verified before moving on.

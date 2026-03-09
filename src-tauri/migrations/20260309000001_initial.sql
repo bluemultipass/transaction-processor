@@ -3,7 +3,6 @@ CREATE TABLE transactions (
   date TEXT NOT NULL,
   description TEXT NOT NULL,
   amount REAL NOT NULL,
-  source_account TEXT NOT NULL,
   accounted INTEGER NOT NULL DEFAULT 0
 );
 
