@@ -235,7 +235,7 @@ Same checks as PR, runs on push to `main`.
 
 ### Release (`release.yml`)
 Triggers on version tag push (`v*`). Builds and uploads installers for:
-- Windows (`.msi`)
+- Windows (`.exe` via NSIS)
 - macOS (`.dmg`)
 - Linux (`.AppImage`)
 
@@ -245,4 +245,33 @@ No code signing — personal use only.
 
 ## Distribution
 
-Personal use. No code signing or notarization. Install by running the platform-appropriate installer from the release artifacts.
+Personal use. No code signing or notarization.
+
+### Windows
+
+Tauri supports two Windows bundlers — **NSIS** (`.exe`) and **WiX** (`.msi`). This project uses NSIS.
+
+To enable it in `tauri.conf.json`:
+```json
+{
+  "bundle": {
+    "targets": ["nsis"]
+  }
+}
+```
+
+**Install experience:**
+1. Download `transaction-processor_x.y.z_x64-setup.exe` from the GitHub release
+2. Run it — Windows may show a SmartScreen warning ("Unknown publisher") since the binary isn't signed; click **More info → Run anyway**
+3. Short wizard: choose install directory (defaults to `%LOCALAPPDATA%\Programs\...` — no admin rights needed), optionally add a desktop shortcut
+4. App launches from Start Menu or shortcut
+
+**Uninstall:** Add/Remove Programs → transaction-processor, or run the uninstaller from the install directory.
+
+### macOS
+
+Download the `.dmg`, open it, drag the app to Applications. Gatekeeper will block an unsigned app on first launch — right-click → Open to bypass.
+
+### Linux
+
+Download the `.AppImage`, make it executable (`chmod +x`), and run it directly. No install step needed.
