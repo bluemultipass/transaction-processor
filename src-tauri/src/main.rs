@@ -3,6 +3,8 @@
 
 mod db;
 
+use tauri::Manager;
+
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
