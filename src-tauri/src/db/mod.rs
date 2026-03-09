@@ -2,9 +2,11 @@ use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::SqlitePool;
 use std::path::Path;
 
-pub async fn init_db(db_path: &Path) -> Result<SqlitePool, Box<dyn std::error::Error>> {
+use crate::error::AppError;
+
+pub async fn init_db(db_path: &Path) -> Result<SqlitePool, AppError> {
     if let Some(parent) = db_path.parent() {
-        std::fs::create_dir_all(parent)?;
+        std::fs::create_dir_all(parent).map_err(|e| AppError::Other(e.to_string()))?;
     }
 
     let options = SqliteConnectOptions::new()
@@ -16,7 +18,10 @@ pub async fn init_db(db_path: &Path) -> Result<SqlitePool, Box<dyn std::error::E
         .connect_with(options)
         .await?;
 
-    sqlx::migrate!("./migrations").run(&pool).await?;
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .map_err(|e| AppError::Database(sqlx::Error::from(e)))?;
 
     Ok(pool)
 }

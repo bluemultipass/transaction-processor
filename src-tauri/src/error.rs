@@ -2,6 +2,7 @@
 pub enum AppError {
     #[error("database error: {0}")]
     Database(#[from] sqlx::Error),
+    #[allow(dead_code)]
     #[error("csv parse error: {0}")]
     Csv(String),
     #[error("{0}")]
