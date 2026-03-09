@@ -1,7 +1,7 @@
 // Items in this module are used in step 6 (transaction commands).
 #![allow(dead_code)]
 
-use std::{collections::HashSet, path::Path};
+use std::path::Path;
 
 use crate::error::AppError;
 
@@ -30,11 +30,12 @@ pub fn detect_format(headers: &[&str]) -> CsvFormat {
     }
 }
 
-/// Parses a Chase CSV file and returns spend-only transactions with deduplication.
+/// Parses a Chase CSV file and returns spend-only transactions.
 ///
 /// Checking format: keeps rows where Amount < 0.
 /// Credit card format: keeps rows where Type == "Sale" and Amount < 0.
 /// The returned `amount` field is the absolute value.
+/// Deduplication against already-stored transactions happens at insert time.
 pub fn parse_transactions(
     path: &Path,
     source_account: &str,
@@ -95,7 +96,7 @@ pub fn parse_transactions(
         }
     }
 
-    Ok(dedup_transactions(transactions))
+    Ok(transactions)
 }
 
 fn get_field(
@@ -119,22 +120,6 @@ fn parse_amount(s: &str) -> Result<f64, AppError> {
         .replace(',', "")
         .parse::<f64>()
         .map_err(|_| AppError::Csv(format!("invalid amount: {s}")))
-}
-
-/// Removes duplicate transactions, keeping the first occurrence of each
-/// `(date, description, amount)` composite key within the Vec.
-pub fn dedup_transactions(transactions: Vec<ParsedTransaction>) -> Vec<ParsedTransaction> {
-    let mut seen: HashSet<(String, String, u64)> = HashSet::new();
-    let mut result = Vec::new();
-
-    for tx in transactions {
-        let key = (tx.date.clone(), tx.description.clone(), tx.amount.to_bits());
-        if seen.insert(key) {
-            result.push(tx);
-        }
-    }
-
-    result
 }
 
 #[cfg(test)]
@@ -250,54 +235,5 @@ Transaction Date,Post Date,Description,Category,Type,Amount,Memo
         assert_eq!(starbucks.date, "01/17/2026");
         assert!((starbucks.amount - 5.50).abs() < f64::EPSILON);
         assert_eq!(starbucks.source_account, "chase_visa");
-    }
-
-    // ── deduplication ──────────────────────────────────────────────────────────
-
-    const CHECKING_CSV_WITH_DUPES: &str = "\
-Details,Posting Date,Description,Amount,Type,Balance,Check or Slip #
-DEBIT,01/15/2026,AMAZON.COM,-45.99,DEBIT_CARD,1234.56,
-DEBIT,01/15/2026,AMAZON.COM,-45.99,DEBIT_CARD,1234.56,
-DEBIT,01/17/2026,STARBUCKS,-5.50,DEBIT_CARD,1229.06,
-";
-
-    #[test]
-    fn deduplicates_within_checking_file() {
-        let f = write_csv(CHECKING_CSV_WITH_DUPES);
-        let txs = parse_transactions(f.path(), "checking").unwrap();
-        assert_eq!(txs.len(), 2);
-    }
-
-    const CREDIT_CSV_WITH_DUPES: &str = "\
-Transaction Date,Post Date,Description,Category,Type,Amount,Memo
-01/15/2026,01/17/2026,AMAZON.COM,Shopping,Sale,-45.99,
-01/15/2026,01/17/2026,AMAZON.COM,Shopping,Sale,-45.99,
-01/17/2026,01/19/2026,STARBUCKS,Food & Drink,Sale,-5.50,
-";
-
-    #[test]
-    fn deduplicates_within_credit_file() {
-        let f = write_csv(CREDIT_CSV_WITH_DUPES);
-        let txs = parse_transactions(f.path(), "chase_visa").unwrap();
-        assert_eq!(txs.len(), 2);
-    }
-
-    #[test]
-    fn keeps_distinct_same_description_different_amount() {
-        let txs = vec![
-            ParsedTransaction {
-                date: "01/15/2026".into(),
-                description: "STARBUCKS".into(),
-                amount: 5.50,
-                source_account: "checking".into(),
-            },
-            ParsedTransaction {
-                date: "01/15/2026".into(),
-                description: "STARBUCKS".into(),
-                amount: 6.00,
-                source_account: "checking".into(),
-            },
-        ];
-        assert_eq!(dedup_transactions(txs).len(), 2);
     }
 }
