@@ -27,7 +27,7 @@ Files to create:
 
 ## Step 2 — Tooling: rust-toolchain, tsconfig, ESLint, Prettier, Husky
 
-**Goal:** All linters/formatters pass on a clean repo; pre-commit hook runs them.
+**Goal:** All linters/formatters pass on a clean repo; pre-commit hook runs them; Claude Code session start hook ensures the dev environment is ready.
 
 Files to create/configure:
 - `rust-toolchain.toml` — pin stable, rustfmt, clippy
@@ -36,8 +36,9 @@ Files to create/configure:
 - `.prettierrc` — minimal config
 - `.husky/pre-commit` — runs cargo fmt --check, cargo clippy -D warnings, eslint, prettier --check
 - `package.json` scripts: `typecheck`, `lint`, `format:check`
+- `.claude/hooks/session-start.sh` — Claude Code SessionStart hook that installs dependencies (`pnpm install`) and verifies the Rust toolchain is present, so Claude Code web sessions start in a known-good state
 
-**Done when:** `pnpm lint`, `pnpm typecheck`, `cargo fmt --check`, `cargo clippy` all pass.
+**Done when:** `pnpm lint`, `pnpm typecheck`, `cargo fmt --check`, `cargo clippy` all pass; Claude Code session start hook runs without error.
 
 ---
 
