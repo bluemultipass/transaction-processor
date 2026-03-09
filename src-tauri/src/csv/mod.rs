@@ -16,7 +16,6 @@ pub struct ParsedTransaction {
     pub date: String,
     pub description: String,
     pub amount: f64,
-    pub source_account: String,
 }
 
 /// Detects the Chase CSV format from the header row.
@@ -35,11 +34,7 @@ pub fn detect_format(headers: &[&str]) -> CsvFormat {
 /// Checking format: keeps rows where Amount < 0.
 /// Credit card format: keeps rows where Type == "Sale" and Amount < 0.
 /// The returned `amount` field is the absolute value.
-/// Deduplication against already-stored transactions happens at insert time.
-pub fn parse_transactions(
-    path: &Path,
-    source_account: &str,
-) -> Result<Vec<ParsedTransaction>, AppError> {
+pub fn parse_transactions(path: &Path) -> Result<Vec<ParsedTransaction>, AppError> {
     let mut reader = csv::Reader::from_path(path).map_err(|e| AppError::Csv(e.to_string()))?;
 
     let headers: Vec<String> = reader
@@ -72,7 +67,6 @@ pub fn parse_transactions(
                     date,
                     description,
                     amount: amount.abs(),
-                    source_account: source_account.to_string(),
                 });
             }
             CsvFormat::CreditCard => {
@@ -90,7 +84,6 @@ pub fn parse_transactions(
                     date,
                     description,
                     amount: amount.abs(),
-                    source_account: source_account.to_string(),
                 });
             }
         }
@@ -179,14 +172,14 @@ DEBIT,01/18/2026,WHOLE FOODS,-32.10,DEBIT_CARD,3196.96,
     #[test]
     fn checking_filters_out_credits() {
         let f = write_csv(CHECKING_CSV);
-        let txs = parse_transactions(f.path(), "checking").unwrap();
+        let txs = parse_transactions(f.path()).unwrap();
         assert!(txs.iter().all(|t| t.description != "PAYROLL"));
     }
 
     #[test]
     fn checking_keeps_debits_as_positive_amounts() {
         let f = write_csv(CHECKING_CSV);
-        let txs = parse_transactions(f.path(), "checking").unwrap();
+        let txs = parse_transactions(f.path()).unwrap();
         assert_eq!(txs.len(), 3);
         assert!(txs.iter().all(|t| t.amount > 0.0));
     }
@@ -194,11 +187,10 @@ DEBIT,01/18/2026,WHOLE FOODS,-32.10,DEBIT_CARD,3196.96,
     #[test]
     fn checking_preserves_correct_values() {
         let f = write_csv(CHECKING_CSV);
-        let txs = parse_transactions(f.path(), "checking").unwrap();
+        let txs = parse_transactions(f.path()).unwrap();
         let amazon = txs.iter().find(|t| t.description == "AMAZON.COM").unwrap();
         assert_eq!(amazon.date, "01/15/2026");
         assert!((amazon.amount - 45.99).abs() < f64::EPSILON);
-        assert_eq!(amazon.source_account, "checking");
     }
 
     // ── credit card CSV ────────────────────────────────────────────────────────
@@ -214,7 +206,7 @@ Transaction Date,Post Date,Description,Category,Type,Amount,Memo
     #[test]
     fn credit_filters_out_payments_and_returns() {
         let f = write_csv(CREDIT_CSV);
-        let txs = parse_transactions(f.path(), "chase_visa").unwrap();
+        let txs = parse_transactions(f.path()).unwrap();
         assert!(txs.iter().all(|t| t.description != "AUTOPAY"));
         assert!(txs.iter().all(|t| t.description != "RETURN CREDIT"));
     }
@@ -222,7 +214,7 @@ Transaction Date,Post Date,Description,Category,Type,Amount,Memo
     #[test]
     fn credit_keeps_sales_as_positive_amounts() {
         let f = write_csv(CREDIT_CSV);
-        let txs = parse_transactions(f.path(), "chase_visa").unwrap();
+        let txs = parse_transactions(f.path()).unwrap();
         assert_eq!(txs.len(), 2);
         assert!(txs.iter().all(|t| t.amount > 0.0));
     }
@@ -230,10 +222,9 @@ Transaction Date,Post Date,Description,Category,Type,Amount,Memo
     #[test]
     fn credit_preserves_correct_values() {
         let f = write_csv(CREDIT_CSV);
-        let txs = parse_transactions(f.path(), "chase_visa").unwrap();
+        let txs = parse_transactions(f.path()).unwrap();
         let starbucks = txs.iter().find(|t| t.description == "STARBUCKS").unwrap();
         assert_eq!(starbucks.date, "01/17/2026");
         assert!((starbucks.amount - 5.50).abs() < f64::EPSILON);
-        assert_eq!(starbucks.source_account, "chase_visa");
     }
 }
