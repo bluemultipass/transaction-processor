@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+# Rust checks (subshell keeps cd scoped)
+(cd src-tauri && cargo fmt --check && cargo clippy -- -D warnings)
+
+# Frontend checks
+pnpm lint
+pnpm format:check
