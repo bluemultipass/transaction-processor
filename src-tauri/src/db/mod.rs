@@ -11,7 +11,10 @@ pub async fn init_db(db_path: &Path) -> Result<SqlitePool, Box<dyn std::error::E
         .filename(db_path)
         .create_if_missing(true);
 
-    let pool = SqlitePool::connect_with(options).await?;
+    let pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(options)
+        .await?;
 
     sqlx::migrate!("./migrations").run(&pool).await?;
 
