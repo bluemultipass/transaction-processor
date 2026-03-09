@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+# Rust checks
+cd src-tauri
+cargo fmt --check
+cargo clippy -- -D warnings
+cd ..
+
+# Frontend checks
+pnpm eslint --max-warnings 0 src/
+pnpm prettier --check src/
