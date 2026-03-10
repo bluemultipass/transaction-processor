@@ -3,7 +3,7 @@ use sqlx::{Row, SqlitePool};
 use tauri::State;
 
 use crate::db::filters;
-use crate::db::transactions::mark_accounted;
+use crate::db::transactions::{mark_accounted, Transaction};
 use crate::error::AppError;
 
 #[derive(Debug, Serialize, specta::Type)]
@@ -11,6 +11,7 @@ pub struct ReportRow {
     pub filter_name: String,
     pub last_date: String,
     pub total_amount: f64,
+    pub transactions: Vec<Transaction>,
 }
 
 #[derive(Debug, Serialize, specta::Type)]
@@ -43,7 +44,7 @@ pub async fn generate_report_inner(
         let pattern = format!("%{}%", filter.pattern);
 
         let matched = sqlx::query(
-            "SELECT id, date, amount FROM transactions \
+            "SELECT id, date, description, amount, accounted FROM transactions \
              WHERE description LIKE ? \
              AND (? IS NULL OR date >= ?) \
              AND (? IS NULL OR date <= ?)",
@@ -63,23 +64,37 @@ pub async fn generate_report_inner(
         let mut total_amount = 0.0f64;
         let mut last_date = String::new();
         let mut ids: Vec<i64> = Vec::new();
+        let mut txs: Vec<Transaction> = Vec::new();
 
         for row in &matched {
             let id: i64 = row.try_get("id").map_err(AppError::Database)?;
             let date: String = row.try_get("date").map_err(AppError::Database)?;
+            let description: String = row.try_get("description").map_err(AppError::Database)?;
             let amount: f64 = row.try_get("amount").map_err(AppError::Database)?;
+            let accounted: bool = row
+                .try_get::<i64, _>("accounted")
+                .map_err(AppError::Database)?
+                != 0;
 
             total_amount += amount;
             if date_sort_key(&date) > date_sort_key(&last_date) {
-                last_date = date;
+                last_date = date.clone();
             }
             ids.push(id);
+            txs.push(Transaction {
+                id,
+                date,
+                description,
+                amount,
+                accounted,
+            });
         }
 
         rows.push(ReportRow {
             filter_name: filter.name.clone(),
             last_date,
             total_amount,
+            transactions: txs,
         });
         all_matched_ids.extend(ids);
     }
@@ -193,6 +208,7 @@ mod tests {
         assert_eq!(output.rows.len(), 1);
         assert_eq!(output.rows[0].filter_name, "Coffee");
         assert!((output.rows[0].total_amount - 11.25).abs() < 0.001);
+        assert_eq!(output.rows[0].transactions.len(), 2);
     }
 
     #[tokio::test]
@@ -206,6 +222,7 @@ mod tests {
         let output = generate_report_inner(&pool, None, None).await.unwrap();
 
         assert_eq!(output.rows[0].last_date, "01/20/2026");
+        assert_eq!(output.rows[0].transactions.len(), 3);
     }
 
     #[tokio::test]

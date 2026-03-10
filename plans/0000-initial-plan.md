@@ -153,7 +153,7 @@ Files:
   - `generate_report(date_from: Option<String>, date_to: Option<String>) -> Result<ReportOutput, AppError>`
     - Load all filters
     - For each filter: query transactions matching `LIKE '%{pattern}%'` in the date range, sum amounts, find max date
-    - Collect `ReportRow { filter_name, last_date, total_amount }`
+    - Collect `ReportRow { filter_name, last_date, total_amount, transactions: Vec<Transaction> }`
     - Mark matched transaction IDs as `accounted = true`
     - Return `ReportOutput { rows: Vec<ReportRow>, text: String }` where `text` is the tab-separated string
   - `ReportRow` and `ReportOutput` structs — `#[derive(Serialize, specta::Type)]`
