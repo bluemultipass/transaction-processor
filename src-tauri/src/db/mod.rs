@@ -1,3 +1,5 @@
+pub mod transactions;
+
 use sqlx::sqlite::SqliteConnectOptions;
 use sqlx::SqlitePool;
 use std::path::Path;

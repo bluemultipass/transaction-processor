@@ -11,7 +11,10 @@ use tauri::Manager;
 use tauri_specta::Builder;
 
 fn main() {
-    let specta_builder = Builder::<tauri::Wry>::new().commands(tauri_specta::collect_commands![]);
+    let specta_builder = Builder::<tauri::Wry>::new().commands(tauri_specta::collect_commands![
+        commands::transactions::import_transactions,
+        commands::transactions::list_transactions,
+    ]);
 
     #[cfg(debug_assertions)]
     specta_builder
@@ -23,7 +26,8 @@ fn main() {
         .setup(|app| {
             let app_data_dir = app.path().app_data_dir()?;
             let db_path = app_data_dir.join("db.sqlite");
-            tauri::async_runtime::block_on(db::init_db(&db_path))?;
+            let pool = tauri::async_runtime::block_on(db::init_db(&db_path))?;
+            app.manage(pool);
             Ok(())
         })
         .run(tauri::generate_context!())
