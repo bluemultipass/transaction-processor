@@ -59,6 +59,7 @@ pub async fn list_transactions(
         .map_err(AppError::Database)
 }
 
+#[allow(dead_code)]
 pub async fn mark_accounted(pool: &SqlitePool, ids: &[i64]) -> Result<(), AppError> {
     for id in ids {
         sqlx::query("UPDATE transactions SET accounted = 1 WHERE id = ?")
