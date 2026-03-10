@@ -14,6 +14,10 @@ fn main() {
     let specta_builder = Builder::<tauri::Wry>::new().commands(tauri_specta::collect_commands![
         commands::transactions::import_transactions,
         commands::transactions::list_transactions,
+        commands::filters::list_filters,
+        commands::filters::create_filter,
+        commands::filters::update_filter,
+        commands::filters::delete_filter,
     ]);
 
     #[cfg(debug_assertions)]
