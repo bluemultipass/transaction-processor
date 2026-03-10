@@ -6,6 +6,7 @@ use crate::error::AppError;
 
 #[derive(Debug, Serialize, specta::Type)]
 pub struct Transaction {
+    #[serde(serialize_with = "crate::db::serialize_i64_safe")]
     pub id: i64,
     pub date: String,
     pub description: String,
