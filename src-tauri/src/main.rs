@@ -23,10 +23,13 @@ fn main() {
 
     #[cfg(debug_assertions)]
     specta_builder
-        .export(Typescript::default(), "../src/bindings.ts")
+        .export(
+            Typescript::default().bigint(specta_typescript::BigIntExportBehavior::Number),
+            "../src/bindings.ts",
+        )
         .expect("Failed to export TypeScript bindings");
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .invoke_handler(specta_builder.invoke_handler())
         .setup(|app| {
             let app_data_dir = app.path().app_data_dir()?;
@@ -35,6 +38,13 @@ fn main() {
             app.manage(pool);
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(|app_handle, event| {
+        if let tauri::RunEvent::Exit = event {
+            let pool = app_handle.state::<sqlx::SqlitePool>();
+            tauri::async_runtime::block_on(pool.close());
+        }
+    });
 }

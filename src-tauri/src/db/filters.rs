@@ -5,6 +5,7 @@ use crate::error::AppError;
 
 #[derive(Debug, Serialize, specta::Type)]
 pub struct Filter {
+    #[serde(serialize_with = "crate::db::serialize_i64_safe")]
     pub id: i64,
     pub name: String,
     pub pattern: String,
