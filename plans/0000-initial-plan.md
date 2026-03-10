@@ -172,7 +172,7 @@ Files:
   - `transactions: Transaction[]`
   - `filters: Filter[]`
   - `dateFrom: string | null`, `dateTo: string | null`
-  - `reportOutput: string | null`
+  - `reportOutput: ReportOutput | null`
   - Actions: `loadTransactions`, `loadFilters`, `setDateRange`, `setReportOutput`
 - `src/App.tsx` — provides AppStore context; renders nav tabs + active screen
 - `src/components/Nav.tsx` — tab bar: "Transactions", "Filters", "Report"
@@ -224,7 +224,7 @@ Files:
   - "Generate Report" button → calls `generateReport` → stores output in store
   - Displays `<textarea readonly>` with the tab-separated output
   - "Copy to Clipboard" button
-  - Shows per-row breakdown (filter name, last date, total) above the copyable text
+  - Shows per-row breakdown above the copyable text: filter name, last date, total, and the individual transactions that made up that row
 
 **Done when:** Report generates correctly and text is copyable.
 
