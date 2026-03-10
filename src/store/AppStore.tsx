@@ -32,13 +32,13 @@ export const AppStoreProvider: ParentComponent = (props) => {
 
   const actions: AppActions = {
     loadTransactions: async () => {
-      const txs = await commands.listTransactions(state.dateFrom, state.dateTo);
-      setState('transactions', txs);
+      const result = await commands.listTransactions(state.dateFrom, state.dateTo);
+      if (result.status === 'ok') setState('transactions', result.data);
     },
 
     loadFilters: async () => {
-      const filters = await commands.listFilters();
-      setState('filters', filters);
+      const result = await commands.listFilters();
+      if (result.status === 'ok') setState('filters', result.data);
     },
 
     setDateRange: (dateFrom, dateTo) => {

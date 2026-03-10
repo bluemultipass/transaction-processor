@@ -19,5 +19,5 @@ module.exports = {
     browser: true,
     es2022: true,
   },
-  ignorePatterns: ["dist/", "src-tauri/", "*.cjs"],
+  ignorePatterns: ["dist/", "src-tauri/", "*.cjs", "src/bindings.ts"],
 };
