@@ -42,10 +42,5 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
 
-    app.run(|app_handle, event| {
-        if let tauri::RunEvent::Exit = event {
-            let pool = app_handle.state::<sqlx::SqlitePool>();
-            tauri::async_runtime::block_on(pool.close());
-        }
-    });
+    app.run(|_app_handle, _event| {});
 }
