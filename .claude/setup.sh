@@ -2,7 +2,8 @@
 # Setup script for Claude Code on the web.
 # Runs as root before Claude Code launches, on new sessions only.
 # Install system-level dependencies that aren't in the default cloud image.
-set -euo pipefail
+
+apt update && apt install -y gh
 
 apt-get install -y --no-install-recommends \
   libgtk-3-dev \
