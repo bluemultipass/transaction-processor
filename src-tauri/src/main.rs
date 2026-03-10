@@ -18,6 +18,7 @@ fn main() {
         commands::filters::create_filter,
         commands::filters::update_filter,
         commands::filters::delete_filter,
+        commands::reports::generate_report,
     ]);
 
     #[cfg(debug_assertions)]
