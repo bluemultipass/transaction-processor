@@ -30,6 +30,7 @@ fn main() {
         .expect("Failed to export TypeScript bindings");
 
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(specta_builder.invoke_handler())
         .setup(|app| {
             let app_data_dir = app.path().app_data_dir()?;
