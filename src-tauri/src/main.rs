@@ -23,7 +23,10 @@ fn main() {
 
     #[cfg(debug_assertions)]
     specta_builder
-        .export(Typescript::default(), "../src/bindings.ts")
+        .export(
+            Typescript::default().bigint(specta_typescript::BigIntExportBehavior::Number),
+            "../src/bindings.ts",
+        )
         .expect("Failed to export TypeScript bindings");
 
     tauri::Builder::default()
