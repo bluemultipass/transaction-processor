@@ -3,9 +3,8 @@
 # Runs as root before Claude Code launches, on new sessions only.
 # Install system-level dependencies that aren't in the default cloud image.
 
-apt update && apt install -y gh
-
-apt-get install -y --no-install-recommends \
+apt-get update && apt-get install -y --no-install-recommends \
+  gh \
   libgtk-3-dev \
   libwebkit2gtk-4.1-dev \
   libsoup-3.0-dev \
