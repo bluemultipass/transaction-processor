@@ -30,38 +30,43 @@ const FilterForm: Component<FilterFormProps> = (props) => {
 
   return (
     <form
+      class="filter-form"
       onSubmit={(e) => {
         void handleSubmit(e);
       }}
     >
       <input
+        class="input"
         type="text"
         placeholder="Name"
         value={name()}
         onInput={(e) => setName(e.currentTarget.value)}
         required
-      />{' '}
+      />
       <input
+        class="input"
         type="text"
         placeholder="Pattern (e.g. AMAZON)"
         value={pattern()}
         onInput={(e) => setPattern(e.currentTarget.value)}
         required
-      />{' '}
-      <button type="submit" disabled={submitting()}>
-        {submitting() ? 'Saving…' : props.submitLabel}
-      </button>
-      <Show when={props.onCancel !== undefined}>
-        {' '}
-        <button
-          type="button"
-          onClick={() => {
-            props.onCancel?.();
-          }}
-        >
-          Cancel
+      />
+      <div class="filter-form-actions">
+        <button class="btn btn-primary btn-sm" type="submit" disabled={submitting()}>
+          {submitting() ? 'Saving…' : props.submitLabel}
         </button>
-      </Show>
+        <Show when={props.onCancel !== undefined}>
+          <button
+            class="btn btn-secondary btn-sm"
+            type="button"
+            onClick={() => {
+              props.onCancel?.();
+            }}
+          >
+            Cancel
+          </button>
+        </Show>
+      </div>
     </form>
   );
 };

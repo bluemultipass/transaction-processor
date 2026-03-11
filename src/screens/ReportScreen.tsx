@@ -3,6 +3,9 @@ import { commands, type ReportRow } from '../bindings';
 import { useAppStore } from '../store/AppStore';
 import TransactionTable from '../components/TransactionTable';
 
+const amountClass = (amount: number) =>
+  amount > 0 ? 'amount-positive' : amount < 0 ? 'amount-negative' : 'amount-neutral';
+
 const ReportScreen: Component = () => {
   const [state, actions] = useAppStore();
   const [generating, setGenerating] = createSignal(false);
@@ -42,13 +45,14 @@ const ReportScreen: Component = () => {
   };
 
   return (
-    <main>
-      <h2>Report</h2>
+    <main class="screen">
+      <h2 class="screen-title">Report</h2>
 
-      <div>
-        <label>
-          From:{' '}
+      <div class="report-controls">
+        <label class="date-field">
+          From
           <input
+            class="input-date"
             type="date"
             value={state.dateFrom ?? ''}
             onInput={(e) => {
@@ -56,10 +60,10 @@ const ReportScreen: Component = () => {
             }}
           />
         </label>
-        {'  '}
-        <label>
-          To:{' '}
+        <label class="date-field">
+          To
           <input
+            class="input-date"
             type="date"
             value={state.dateTo ?? ''}
             onInput={(e) => {
@@ -67,10 +71,8 @@ const ReportScreen: Component = () => {
             }}
           />
         </label>
-      </div>
-
-      <div>
         <button
+          class="btn btn-primary"
           onClick={() => {
             void handleGenerateReport();
           }}
@@ -80,31 +82,45 @@ const ReportScreen: Component = () => {
         </button>
       </div>
 
-      <Show when={error()}>{(err) => <p>Error: {err()}</p>}</Show>
+      <Show when={error()}>{(err) => <div class="msg-error">✕ {err()}</div>}</Show>
 
       <Show when={state.reportOutput}>
         {(output) => (
           <>
-            <h3>Breakdown</h3>
-            <For each={output().rows}>
-              {(row: ReportRow) => (
-                <details>
-                  <summary>
-                    {row.filter_name} — {row.last_date} — ${row.total_amount.toFixed(2)}
-                  </summary>
-                  <TransactionTable transactions={row.transactions} />
-                </details>
-              )}
-            </For>
+            <p class="section-title">Breakdown</p>
+            <div class="report-breakdown">
+              <For each={output().rows}>
+                {(row: ReportRow) => (
+                  <details class="report-details">
+                    <summary>
+                      <span class="summary-name">{row.filter_name}</span>
+                      <span class="summary-date">{row.last_date}</span>
+                      <span class={`summary-amount ${amountClass(row.total_amount)}`}>
+                        ${row.total_amount.toFixed(2)}
+                      </span>
+                      <span class="summary-chevron">›</span>
+                    </summary>
+                    <div class="detail-content">
+                      <TransactionTable transactions={row.transactions} />
+                    </div>
+                  </details>
+                )}
+              </For>
+            </div>
 
-            <h3>Output</h3>
-            <div>
-              <textarea readonly rows={10} style={{ width: '100%', 'font-family': 'monospace' }}>
+            <p class="section-title">Output</p>
+            <div class="report-output-section">
+              <textarea class="report-textarea" readonly rows={10}>
                 {output().text}
               </textarea>
-            </div>
-            <div>
-              <button onClick={handleCopy}>{copied() ? 'Copied!' : 'Copy to Clipboard'}</button>
+              <div class="report-output-actions">
+                <button
+                  class={`btn ${copied() ? 'btn-success' : 'btn-secondary'}`}
+                  onClick={handleCopy}
+                >
+                  {copied() ? '✓ Copied' : 'Copy to Clipboard'}
+                </button>
+              </div>
             </div>
           </>
         )}

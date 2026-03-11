@@ -48,62 +48,77 @@ const FiltersScreen: Component = () => {
   };
 
   return (
-    <main>
-      <h2>Filters</h2>
+    <main class="screen">
+      <h2 class="screen-title">Filters</h2>
 
-      <Show when={error()}>{(err) => <p>Error: {err()}</p>}</Show>
+      <Show when={error()}>{(err) => <div class="msg-error">✕ {err()}</div>}</Show>
 
-      <Show when={state.filters.length > 0} fallback={<p>No filters yet.</p>}>
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Pattern</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <For each={state.filters}>
-              {(filter) => (
-                <Show
-                  when={editingId() === filter.id}
-                  fallback={
+      <Show
+        when={state.filters.length > 0}
+        fallback={<p class="empty-state">No filters defined yet.</p>}
+      >
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Pattern</th>
+                <th class="col-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <For each={state.filters}>
+                {(filter) => (
+                  <Show
+                    when={editingId() === filter.id}
+                    fallback={
+                      <tr>
+                        <td>{filter.name}</td>
+                        <td class="col-muted">{filter.pattern}</td>
+                        <td class="col-right">
+                          <div class="action-buttons">
+                            <button
+                              class="btn btn-ghost btn-sm"
+                              onClick={() => setEditingId(filter.id)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              class="btn btn-danger btn-sm"
+                              onClick={() => {
+                                void handleDelete(filter.id);
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  >
                     <tr>
-                      <td>{filter.name}</td>
-                      <td>{filter.pattern}</td>
-                      <td>
-                        <button onClick={() => setEditingId(filter.id)}>Edit</button>{' '}
-                        <button
-                          onClick={() => {
-                            void handleDelete(filter.id);
-                          }}
-                        >
-                          Delete
-                        </button>
+                      <td colSpan={3}>
+                        <FilterForm
+                          initialName={filter.name}
+                          initialPattern={filter.pattern}
+                          submitLabel="Save"
+                          onSubmit={(name, pattern) => handleUpdate(filter.id, name, pattern)}
+                          onCancel={() => setEditingId(null)}
+                        />
                       </td>
                     </tr>
-                  }
-                >
-                  <tr>
-                    <td colSpan={3}>
-                      <FilterForm
-                        initialName={filter.name}
-                        initialPattern={filter.pattern}
-                        submitLabel="Save"
-                        onSubmit={(name, pattern) => handleUpdate(filter.id, name, pattern)}
-                        onCancel={() => setEditingId(null)}
-                      />
-                    </td>
-                  </tr>
-                </Show>
-              )}
-            </For>
-          </tbody>
-        </table>
+                  </Show>
+                )}
+              </For>
+            </tbody>
+          </table>
+        </div>
       </Show>
 
-      <h3>Add Filter</h3>
-      <FilterForm submitLabel="Add" onSubmit={handleCreate} />
+      <p class="section-title">Add Filter</p>
+      <div class="add-filter-section">
+        <FilterForm submitLabel="Add" onSubmit={handleCreate} />
+      </div>
     </main>
   );
 };

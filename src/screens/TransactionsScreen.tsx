@@ -4,6 +4,9 @@ import { commands, type ImportResult, type PendingTransaction } from '../binding
 import { useAppStore } from '../store/AppStore';
 import TransactionTable from '../components/TransactionTable';
 
+const amountClass = (amount: number) =>
+  amount > 0 ? 'amount-positive' : amount < 0 ? 'amount-negative' : 'amount-neutral';
+
 const TransactionsScreen: Component = () => {
   const [state, actions] = useAppStore();
   const [importResult, setImportResult] = createSignal<ImportResult | null>(null);
@@ -101,11 +104,12 @@ const TransactionsScreen: Component = () => {
   const includeCount = () => pendingTransactions().length - skippedIndices().size;
 
   return (
-    <main>
-      <h2>Transactions</h2>
+    <main class="screen">
+      <h2 class="screen-title">Transactions</h2>
 
-      <div>
+      <div class="toolbar">
         <button
+          class="btn btn-primary"
           onClick={() => {
             void handleImport();
           }}
@@ -116,76 +120,98 @@ const TransactionsScreen: Component = () => {
       </div>
 
       <Show when={importResult()}>
-        {(result) => <p>Imported {result().imported} transaction(s).</p>}
+        {(result) => (
+          <div class="msg-success">
+            ✓ Imported {result().imported} transaction{result().imported !== 1 ? 's' : ''}
+          </div>
+        )}
       </Show>
 
-      <Show when={importError()}>{(error) => <p>Error: {error()}</p>}</Show>
+      <Show when={importError()}>{(error) => <div class="msg-error">✕ {error()}</div>}</Show>
 
       <Show when={pendingTransactions().length > 0}>
-        <div>
-          <h3>Review before importing</h3>
-          <p>
-            {includeCount()} of {pendingTransactions().length} transaction(s) will be imported.
+        <div class="review-panel">
+          <div class="review-panel-header">
+            <span class="review-panel-title">Review before importing</span>
+          </div>
+          <p class="review-summary">
+            <strong>{includeCount()}</strong> of {pendingTransactions().length} transaction
+            {pendingTransactions().length !== 1 ? 's' : ''} will be imported.
             <Show when={skippedIndices().size > 0}>
               {' '}
-              {skippedIndices().size} marked as duplicate and will be skipped.
+              <strong>{skippedIndices().size}</strong> marked as duplicate and will be skipped.
             </Show>
           </p>
-          <table>
-            <thead>
-              <tr>
-                <th>Skip</th>
-                <th>Date</th>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Note</th>
-              </tr>
-            </thead>
-            <tbody>
-              <For each={pendingTransactions()}>
-                {(tx, i) => (
-                  <tr>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={skippedIndices().has(i())}
-                        onChange={() => {
-                          toggleSkip(i());
-                        }}
-                      />
-                    </td>
-                    <td>{tx.date}</td>
-                    <td>{tx.description}</td>
-                    <td>${tx.amount.toFixed(2)}</td>
-                    <td>{tx.is_possible_duplicate ? 'Possible duplicate' : ''}</td>
-                  </tr>
-                )}
-              </For>
-            </tbody>
-          </table>
-          <button
-            onClick={() => {
-              void handleConfirm();
-            }}
-            disabled={confirming() || includeCount() === 0}
-          >
-            {confirming() ? 'Importing…' : `Import ${includeCount().toString()} transaction(s)`}
-          </button>
-          {'  '}
-          <button
-            onClick={() => {
-              setPendingTransactions([]);
-            }}
-          >
-            Cancel
-          </button>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="col-center">Skip</th>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th class="col-right">Amount</th>
+                  <th class="col-center">Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                <For each={pendingTransactions()}>
+                  {(tx, i) => (
+                    <tr classList={{ 'duplicate-row': tx.is_possible_duplicate }}>
+                      <td class="col-center">
+                        <input
+                          class="skip-checkbox"
+                          type="checkbox"
+                          checked={skippedIndices().has(i())}
+                          onChange={() => {
+                            toggleSkip(i());
+                          }}
+                        />
+                      </td>
+                      <td class="col-muted">{tx.date}</td>
+                      <td>{tx.description}</td>
+                      <td class={`col-right ${amountClass(tx.amount)}`}>${tx.amount.toFixed(2)}</td>
+                      <td class="col-center">
+                        {tx.is_possible_duplicate ? (
+                          <span class="duplicate-badge">Duplicate</span>
+                        ) : (
+                          ''
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </For>
+              </tbody>
+            </table>
+          </div>
+          <div class="review-actions">
+            <button
+              class="btn btn-primary"
+              onClick={() => {
+                void handleConfirm();
+              }}
+              disabled={confirming() || includeCount() === 0}
+            >
+              {confirming()
+                ? 'Importing…'
+                : `Import ${includeCount().toString()} transaction${includeCount() !== 1 ? 's' : ''}`}
+            </button>
+            <button
+              class="btn btn-secondary"
+              onClick={() => {
+                setPendingTransactions([]);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </Show>
 
-      <div>
-        <label>
-          From:{' '}
+      <div class="date-range-bar">
+        <label class="date-field">
+          From
           <input
+            class="input-date"
             type="date"
             value={state.dateFrom ?? ''}
             onInput={(e) => {
@@ -193,10 +219,10 @@ const TransactionsScreen: Component = () => {
             }}
           />
         </label>
-        {'  '}
-        <label>
-          To:{' '}
+        <label class="date-field">
+          To
           <input
+            class="input-date"
             type="date"
             value={state.dateTo ?? ''}
             onInput={(e) => {
