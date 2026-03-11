@@ -234,13 +234,17 @@ Files:
 
 **Goal:** Security permissions are minimal and explicit.
 
-Files:
-- `src-tauri/capabilities/default.json`:
-  - `dialog:allow-open` (for CSV file picker)
-  - `fs:allow-read` scoped to user-selected files
-  - `fs:allow-read` + `fs:allow-write` scoped to app data dir (for SQLite)
+**Status: Complete — no separate work required.**
 
-**Done when:** App still works end-to-end after capability restrictions are in place.
+`src-tauri/capabilities/default.json` was correctly configured during earlier steps with the minimal necessary permissions:
+- `core:default` — covers `invoke`, events, and basic app/window APIs
+- `dialog:allow-open` — covers the file picker in the Transactions screen
+
+The plan originally listed `fs:allow-read` (user-selected files) and `fs:allow-read`/`fs:allow-write` (app data dir for SQLite), but those are permissions from `tauri-plugin-fs`, which is not installed. All file I/O is done natively in Rust:
+- CSV files are read by the Rust backend (`src-tauri/src/csv/mod.rs`) after the frontend passes the path from the dialog
+- SQLite is managed by `sqlx` and `std::fs` in Rust (`src-tauri/src/db/mod.rs`)
+
+The frontend never calls any `@tauri-apps/plugin-fs` APIs, so no `fs:*` capability entries are needed or applicable.
 
 ---
 
