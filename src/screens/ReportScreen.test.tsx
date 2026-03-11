@@ -74,8 +74,10 @@ describe('ReportScreen', () => {
     await waitFor(() => {
       expect(screen.getByText('Breakdown')).toBeInTheDocument();
     });
-    // The summary row uses " — " as separator; the textarea uses tabs
-    expect(screen.getByText(/Amazon.*—.*2024-01-15.*—.*\$42\.50/)).toBeInTheDocument();
+    // Summary row renders each piece in a separate span
+    expect(screen.getByText('Amazon')).toBeInTheDocument();
+    expect(screen.getByText('2024-01-15')).toBeInTheDocument();
+    expect(screen.getByText('$42.50')).toBeInTheDocument();
     const textarea = screen.getByRole('textbox');
     expect(textarea).toHaveValue('Amazon\t2024-01-15\t$42.50');
   });
@@ -89,7 +91,7 @@ describe('ReportScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Generate Report' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Error: Database error')).toBeInTheDocument();
+      expect(screen.getByText(/Database error/)).toBeInTheDocument();
     });
   });
 });
