@@ -12,7 +12,8 @@ use tauri_specta::Builder;
 
 fn main() {
     let specta_builder = Builder::<tauri::Wry>::new().commands(tauri_specta::collect_commands![
-        commands::transactions::import_transactions,
+        commands::transactions::preview_import,
+        commands::transactions::confirm_import,
         commands::transactions::list_transactions,
         commands::filters::list_filters,
         commands::filters::create_filter,

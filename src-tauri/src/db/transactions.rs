@@ -60,6 +60,35 @@ pub async fn list_transactions(
         .map_err(AppError::Database)
 }
 
+pub async fn list_transactions_in_range(
+    pool: &SqlitePool,
+    date_from: &str,
+    date_to: &str,
+) -> Result<Vec<Transaction>, AppError> {
+    let rows = sqlx::query(
+        "SELECT id, date, description, amount, accounted FROM transactions \
+         WHERE date >= ? AND date <= ? \
+         ORDER BY date DESC",
+    )
+    .bind(date_from)
+    .bind(date_to)
+    .fetch_all(pool)
+    .await?;
+
+    rows.into_iter()
+        .map(|row| {
+            Ok(Transaction {
+                id: row.try_get("id")?,
+                date: row.try_get("date")?,
+                description: row.try_get("description")?,
+                amount: row.try_get("amount")?,
+                accounted: row.try_get::<i64, _>("accounted")? != 0,
+            })
+        })
+        .collect::<Result<Vec<_>, sqlx::Error>>()
+        .map_err(AppError::Database)
+}
+
 pub async fn mark_accounted(pool: &SqlitePool, ids: &[i64]) -> Result<(), AppError> {
     for id in ids {
         sqlx::query("UPDATE transactions SET accounted = 1 WHERE id = ?")
@@ -164,6 +193,23 @@ mod tests {
             .unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].description, "AMAZON.COM");
+    }
+
+    #[tokio::test]
+    async fn list_transactions_in_range_returns_overlap() {
+        let pool = setup_db().await;
+        let transactions = vec![
+            tx("01/10/2026", "AMAZON.COM", 10.00),
+            tx("01/15/2026", "STARBUCKS", 5.50),
+            tx("01/20/2026", "WALMART", 25.00),
+        ];
+        insert_transactions(&pool, transactions).await.unwrap();
+
+        let result = list_transactions_in_range(&pool, "01/13/2026", "01/17/2026")
+            .await
+            .unwrap();
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].description, "STARBUCKS");
     }
 
     #[tokio::test]

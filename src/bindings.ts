@@ -5,9 +5,24 @@
 
 
 export const commands = {
-async importTransactions(paths: string[]) : Promise<Result<ImportResult, string>> {
+/**
+ * Parse CSV files and detect potential duplicates against existing DB rows.
+ * Does NOT insert anything — the frontend confirms which rows to keep.
+ */
+async previewImport(paths: string[]) : Promise<Result<PreviewResult, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("import_transactions", { paths }) };
+    return { status: "ok", data: await TAURI_INVOKE("preview_import", { paths }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Insert the transactions the user confirmed (i.e. not marked as duplicates).
+ */
+async confirmImport(transactions: PendingTransaction[]) : Promise<Result<ImportResult, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("confirm_import", { transactions }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -75,6 +90,11 @@ async generateReport(dateFrom: string | null, dateTo: string | null) : Promise<R
 
 export type Filter = { id: number; name: string; pattern: string }
 export type ImportResult = { imported: number }
+/**
+ * A parsed transaction returned to the frontend for user review before insertion.
+ */
+export type PendingTransaction = { date: string; description: string; amount: number; is_possible_duplicate: boolean }
+export type PreviewResult = { transactions: PendingTransaction[] }
 export type ReportOutput = { rows: ReportRow[]; text: string }
 export type ReportRow = { filter_name: string; last_date: string; total_amount: number; transactions: Transaction[] }
 export type Transaction = { id: number; date: string; description: string; amount: number; accounted: boolean }
