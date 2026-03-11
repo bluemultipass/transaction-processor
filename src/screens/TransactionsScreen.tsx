@@ -1,6 +1,6 @@
-import { Component, createSignal, onMount, Show } from 'solid-js';
+import { Component, createSignal, For, onMount, Show } from 'solid-js';
 import { open } from '@tauri-apps/plugin-dialog';
-import { commands, type ImportResult, type Transaction } from '../bindings';
+import { commands, type ImportResult, type PendingTransaction } from '../bindings';
 import { useAppStore } from '../store/AppStore';
 import TransactionTable from '../components/TransactionTable';
 
@@ -9,18 +9,31 @@ const TransactionsScreen: Component = () => {
   const [importResult, setImportResult] = createSignal<ImportResult | null>(null);
   const [importError, setImportError] = createSignal<string | null>(null);
   const [importing, setImporting] = createSignal(false);
-  const [possibleDuplicates, setPossibleDuplicates] = createSignal<Transaction[]>([]);
-  const [duplicatesDismissed, setDuplicatesDismissed] = createSignal(false);
+  const [pendingTransactions, setPendingTransactions] = createSignal<PendingTransaction[]>([]);
+  const [skippedIndices, setSkippedIndices] = createSignal<Set<number>>(new Set());
+  const [confirming, setConfirming] = createSignal(false);
 
   onMount(() => {
     void actions.loadTransactions();
   });
 
+  const doConfirmImport = async (transactions: PendingTransaction[]) => {
+    const result = await commands.confirmImport(transactions);
+    if (result.status === 'ok') {
+      setImportResult(result.data);
+      setPendingTransactions([]);
+      setSkippedIndices(new Set<number>());
+      await actions.loadTransactions();
+    } else {
+      setImportError(result.error);
+    }
+  };
+
   const handleImport = async () => {
     setImportResult(null);
     setImportError(null);
-    setPossibleDuplicates([]);
-    setDuplicatesDismissed(false);
+    setPendingTransactions([]);
+    setSkippedIndices(new Set<number>());
 
     const selected = await open({
       multiple: true,
@@ -31,16 +44,47 @@ const TransactionsScreen: Component = () => {
 
     setImporting(true);
     try {
-      const result = await commands.importTransactions(selected);
+      const result = await commands.previewImport(selected);
       if (result.status === 'ok') {
-        setImportResult(result.data);
-        setPossibleDuplicates(result.data.possible_duplicates);
-        await actions.loadTransactions();
+        const preview = result.data.transactions;
+        const hasDuplicates = preview.some((t) => t.is_possible_duplicate);
+        if (!hasDuplicates) {
+          // No duplicates — insert immediately without asking the user.
+          await doConfirmImport(preview);
+        } else {
+          // Show review UI: pre-check duplicate rows as "skip".
+          setPendingTransactions(preview);
+          setSkippedIndices(
+            new Set<number>(preview.flatMap((t, i) => (t.is_possible_duplicate ? [i] : []))),
+          );
+        }
       } else {
         setImportError(result.error);
       }
     } finally {
       setImporting(false);
+    }
+  };
+
+  const toggleSkip = (index: number) => {
+    setSkippedIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
+  const handleConfirm = async () => {
+    const toInsert = pendingTransactions().filter((_, i) => !skippedIndices().has(i));
+    setConfirming(true);
+    try {
+      await doConfirmImport(toInsert);
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -54,6 +98,8 @@ const TransactionsScreen: Component = () => {
     void actions.loadTransactions();
   };
 
+  const includeCount = () => pendingTransactions().length - skippedIndices().size;
+
   return (
     <main>
       <h2>Transactions</h2>
@@ -63,7 +109,7 @@ const TransactionsScreen: Component = () => {
           onClick={() => {
             void handleImport();
           }}
-          disabled={importing()}
+          disabled={importing() || pendingTransactions().length > 0}
         >
           {importing() ? 'Importing…' : 'Import CSV'}
         </button>
@@ -75,20 +121,63 @@ const TransactionsScreen: Component = () => {
 
       <Show when={importError()}>{(error) => <p>Error: {error()}</p>}</Show>
 
-      <Show when={possibleDuplicates().length > 0 && !duplicatesDismissed()}>
-        <div role="alert">
+      <Show when={pendingTransactions().length > 0}>
+        <div>
+          <h3>Review before importing</h3>
           <p>
-            Warning: {possibleDuplicates().length} possible duplicate(s) detected. These
-            transactions from the uploaded file already exist in the database with the same date,
-            description, and amount. Review them before proceeding.
+            {includeCount()} of {pendingTransactions().length} transaction(s) will be imported.
+            <Show when={skippedIndices().size > 0}>
+              {' '}
+              {skippedIndices().size} marked as duplicate and will be skipped.
+            </Show>
           </p>
-          <TransactionTable transactions={possibleDuplicates()} />
+          <table>
+            <thead>
+              <tr>
+                <th>Skip</th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              <For each={pendingTransactions()}>
+                {(tx, i) => (
+                  <tr>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={skippedIndices().has(i())}
+                        onChange={() => {
+                          toggleSkip(i());
+                        }}
+                      />
+                    </td>
+                    <td>{tx.date}</td>
+                    <td>{tx.description}</td>
+                    <td>${tx.amount.toFixed(2)}</td>
+                    <td>{tx.is_possible_duplicate ? 'Possible duplicate' : ''}</td>
+                  </tr>
+                )}
+              </For>
+            </tbody>
+          </table>
           <button
             onClick={() => {
-              setDuplicatesDismissed(true);
+              void handleConfirm();
+            }}
+            disabled={confirming() || includeCount() === 0}
+          >
+            {confirming() ? 'Importing…' : `Import ${includeCount()} transaction(s)`}
+          </button>
+          {'  '}
+          <button
+            onClick={() => {
+              setPendingTransactions([]);
             }}
           >
-            Dismiss
+            Cancel
           </button>
         </div>
       </Show>
