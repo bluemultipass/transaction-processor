@@ -1,6 +1,6 @@
 import { Component, createSignal, onMount, Show } from 'solid-js';
 import { open } from '@tauri-apps/plugin-dialog';
-import { commands, type ImportResult } from '../bindings';
+import { commands, type ImportResult, type Transaction } from '../bindings';
 import { useAppStore } from '../store/AppStore';
 import TransactionTable from '../components/TransactionTable';
 
@@ -9,6 +9,8 @@ const TransactionsScreen: Component = () => {
   const [importResult, setImportResult] = createSignal<ImportResult | null>(null);
   const [importError, setImportError] = createSignal<string | null>(null);
   const [importing, setImporting] = createSignal(false);
+  const [possibleDuplicates, setPossibleDuplicates] = createSignal<Transaction[]>([]);
+  const [duplicatesDismissed, setDuplicatesDismissed] = createSignal(false);
 
   onMount(() => {
     void actions.loadTransactions();
@@ -17,6 +19,8 @@ const TransactionsScreen: Component = () => {
   const handleImport = async () => {
     setImportResult(null);
     setImportError(null);
+    setPossibleDuplicates([]);
+    setDuplicatesDismissed(false);
 
     const selected = await open({
       multiple: true,
@@ -30,6 +34,7 @@ const TransactionsScreen: Component = () => {
       const result = await commands.importTransactions(selected);
       if (result.status === 'ok') {
         setImportResult(result.data);
+        setPossibleDuplicates(result.data.possible_duplicates);
         await actions.loadTransactions();
       } else {
         setImportError(result.error);
@@ -69,6 +74,24 @@ const TransactionsScreen: Component = () => {
       </Show>
 
       <Show when={importError()}>{(error) => <p>Error: {error()}</p>}</Show>
+
+      <Show when={possibleDuplicates().length > 0 && !duplicatesDismissed()}>
+        <div role="alert">
+          <p>
+            Warning: {possibleDuplicates().length} possible duplicate(s) detected. These
+            transactions from the uploaded file already exist in the database with the same date,
+            description, and amount. Review them before proceeding.
+          </p>
+          <TransactionTable transactions={possibleDuplicates()} />
+          <button
+            onClick={() => {
+              setDuplicatesDismissed(true);
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      </Show>
 
       <div>
         <label>

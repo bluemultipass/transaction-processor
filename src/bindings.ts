@@ -74,7 +74,7 @@ async generateReport(dateFrom: string | null, dateTo: string | null) : Promise<R
 /** user-defined types **/
 
 export type Filter = { id: number; name: string; pattern: string }
-export type ImportResult = { imported: number }
+export type ImportResult = { imported: number; possible_duplicates: Transaction[] }
 export type ReportOutput = { rows: ReportRow[]; text: string }
 export type ReportRow = { filter_name: string; last_date: string; total_amount: number; transactions: Transaction[] }
 export type Transaction = { id: number; date: string; description: string; amount: number; accounted: boolean }
