@@ -271,8 +271,7 @@ Setup:
 **Goal:** GitHub Actions runs all checks on PR and push to main.
 
 Files:
-- `.github/workflows/pr.yml` — checkout, install rust+node+pnpm, run: cargo fmt --check, cargo clippy, cargo test, eslint, prettier --check, pnpm typecheck, vitest run
-- `.github/workflows/main.yml` — same, triggers on push to main
+- `.github/workflows/ci.yml` — triggers on `pull_request` and `push` to main; runs: cargo fmt --check, cargo clippy, cargo test, eslint, prettier --check, pnpm typecheck, vitest run
 - `.github/workflows/release.yml` — triggers on `v*` tags, uses `tauri-action` to build NSIS/dmg/AppImage
 
 **Done when:** Workflows are syntactically valid YAML; local checks all pass.
