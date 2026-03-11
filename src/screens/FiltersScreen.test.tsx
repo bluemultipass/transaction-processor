@@ -37,7 +37,7 @@ describe('FiltersScreen', () => {
   it("shows 'No filters yet.' when filter list is empty", async () => {
     renderFiltersScreen();
     await waitFor(() => {
-      expect(screen.getByText('No filters yet.')).toBeInTheDocument();
+      expect(screen.getByText('No filters defined yet.')).toBeInTheDocument();
     });
   });
 
@@ -52,7 +52,7 @@ describe('FiltersScreen', () => {
     renderFiltersScreen();
 
     await waitFor(() => {
-      expect(screen.getByText('No filters yet.')).toBeInTheDocument();
+      expect(screen.getByText('No filters defined yet.')).toBeInTheDocument();
     });
 
     await user.type(screen.getByPlaceholderText('Name'), 'Amazon');

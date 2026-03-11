@@ -10,10 +10,12 @@ function App() {
 
   return (
     <AppStoreProvider>
-      <Nav activeTab={activeTab()} onTabChange={setActiveTab} />
-      {activeTab() === 'transactions' && <TransactionsScreen />}
-      {activeTab() === 'filters' && <FiltersScreen />}
-      {activeTab() === 'report' && <ReportScreen />}
+      <div class="app-container">
+        <Nav activeTab={activeTab()} onTabChange={setActiveTab} />
+        {activeTab() === 'transactions' && <TransactionsScreen />}
+        {activeTab() === 'filters' && <FiltersScreen />}
+        {activeTab() === 'report' && <ReportScreen />}
+      </div>
     </AppStoreProvider>
   );
 }

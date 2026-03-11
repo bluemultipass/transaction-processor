@@ -16,11 +16,16 @@ const TABS: { id: Tab; label: string }[] = [
 
 const Nav: Component<NavProps> = (props) => {
   return (
-    <nav>
+    <nav class="app-nav">
+      <span class="nav-logo">
+        <span class="nav-logo-dot" />
+        Ledger
+      </span>
       <For each={TABS}>
         {(tab) => (
           <button
             type="button"
+            class="nav-tab"
             aria-current={props.activeTab === tab.id ? 'page' : undefined}
             onClick={() => {
               props.onTabChange(tab.id);
