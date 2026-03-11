@@ -169,7 +169,7 @@ const TransactionsScreen: Component = () => {
             }}
             disabled={confirming() || includeCount() === 0}
           >
-            {confirming() ? 'Importing…' : `Import ${includeCount()} transaction(s)`}
+            {confirming() ? 'Importing…' : `Import ${includeCount().toString()} transaction(s)`}
           </button>
           {'  '}
           <button
