@@ -22,6 +22,8 @@ fn main() {
         commands::reports::generate_report,
         commands::settings::get_split_count,
         commands::settings::set_split_count,
+        commands::backup::export_db,
+        commands::backup::import_db,
     ]);
 
     #[cfg(debug_assertions)]
