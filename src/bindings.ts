@@ -91,6 +91,22 @@ async setSplitCount(count: number) : Promise<Result<null, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async exportDb(path: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("export_db", { path }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async importDb(path: string) : Promise<Result<ImportDbResult, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("import_db", { path }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -105,6 +121,7 @@ async setSplitCount(count: number) : Promise<Result<null, string>> {
 /** user-defined types **/
 
 export type Filter = { id: number; name: string; pattern: string }
+export type ImportDbResult = { transactions: number; filters: number; settings: number }
 export type ImportResult = { imported: number }
 /**
  * A parsed transaction returned to the frontend for user review before insertion.

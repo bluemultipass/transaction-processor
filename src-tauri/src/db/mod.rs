@@ -1,3 +1,4 @@
+pub mod backup;
 pub mod filters;
 pub mod settings;
 pub mod transactions;
