@@ -18,10 +18,7 @@ const TABS: { id: Tab; label: string }[] = [
 const Nav: Component<NavProps> = (props) => {
   return (
     <nav class="app-nav">
-      <span class="nav-logo">
-        <span class="nav-logo-dot" />
-        Ledger
-      </span>
+      <span class="nav-logo">Ledger</span>
       <For each={TABS}>
         {(tab) => (
           <button
