@@ -34,6 +34,7 @@ pub async fn generate_report_inner(
     pool: &SqlitePool,
     date_from: Option<&str>,
     date_to: Option<&str>,
+    split_count: i64,
 ) -> Result<ReportOutput, AppError> {
     let all_filters = filters::list_filters(pool).await?;
 
@@ -93,7 +94,7 @@ pub async fn generate_report_inner(
         rows.push(ReportRow {
             filter_name: filter.name.clone(),
             last_date,
-            total_amount,
+            total_amount: total_amount / split_count as f64,
             transactions: txs,
         });
         all_matched_ids.extend(ids);
@@ -124,7 +125,14 @@ pub async fn generate_report(
     date_from: Option<String>,
     date_to: Option<String>,
 ) -> Result<ReportOutput, AppError> {
-    generate_report_inner(&state, date_from.as_deref(), date_to.as_deref()).await
+    let split_count = crate::db::settings::get_split_count(&state).await?;
+    generate_report_inner(
+        &state,
+        date_from.as_deref(),
+        date_to.as_deref(),
+        split_count,
+    )
+    .await
 }
 
 #[cfg(test)]
@@ -203,7 +211,7 @@ mod tests {
         insert_tx(&pool, "01/15/2026", "STARBUCKS RESERVE", 6.75).await;
         insert_tx(&pool, "01/12/2026", "WHOLEFDS MARKET", 52.00).await;
 
-        let output = generate_report_inner(&pool, None, None).await.unwrap();
+        let output = generate_report_inner(&pool, None, None, 1).await.unwrap();
 
         assert_eq!(output.rows.len(), 1);
         assert_eq!(output.rows[0].filter_name, "Coffee");
@@ -219,7 +227,7 @@ mod tests {
         insert_tx(&pool, "01/20/2026", "STARBUCKS B", 5.00).await;
         insert_tx(&pool, "01/05/2026", "STARBUCKS C", 3.00).await;
 
-        let output = generate_report_inner(&pool, None, None).await.unwrap();
+        let output = generate_report_inner(&pool, None, None, 1).await.unwrap();
 
         assert_eq!(output.rows[0].last_date, "01/20/2026");
         assert_eq!(output.rows[0].transactions.len(), 3);
@@ -232,7 +240,7 @@ mod tests {
         let id1 = insert_tx(&pool, "01/10/2026", "STARBUCKS A", 4.00).await;
         let id2 = insert_tx(&pool, "01/12/2026", "OTHER STORE", 10.00).await;
 
-        generate_report_inner(&pool, None, None).await.unwrap();
+        generate_report_inner(&pool, None, None, 1).await.unwrap();
 
         assert!(is_accounted(&pool, id1).await);
         assert!(!is_accounted(&pool, id2).await);
@@ -246,7 +254,7 @@ mod tests {
         insert_tx(&pool, "01/15/2026", "STARBUCKS MID", 5.00).await;
         insert_tx(&pool, "01/25/2026", "STARBUCKS LATE", 7.00).await;
 
-        let output = generate_report_inner(&pool, Some("01/10/2026"), Some("01/20/2026"))
+        let output = generate_report_inner(&pool, Some("01/10/2026"), Some("01/20/2026"), 1)
             .await
             .unwrap();
 
@@ -260,7 +268,7 @@ mod tests {
         insert_filter(&pool, "Coffee", "STARBUCKS").await;
         insert_tx(&pool, "01/10/2026", "STARBUCKS A", 4.50).await;
 
-        let output = generate_report_inner(&pool, None, None).await.unwrap();
+        let output = generate_report_inner(&pool, None, None, 1).await.unwrap();
 
         assert!(output.text.contains('\t'));
         assert!(output.text.contains("Coffee"));
@@ -275,7 +283,7 @@ mod tests {
         insert_tx(&pool, "01/10/2026", "STARBUCKS A", 4.50).await;
         insert_tx(&pool, "01/12/2026", "WHOLEFDS MARKET", 55.00).await;
 
-        let output = generate_report_inner(&pool, None, None).await.unwrap();
+        let output = generate_report_inner(&pool, None, None, 1).await.unwrap();
 
         assert_eq!(output.rows.len(), 2);
         let lines: Vec<&str> = output.text.lines().collect();
@@ -288,7 +296,7 @@ mod tests {
         insert_filter(&pool, "Coffee", "STARBUCKS").await;
         insert_tx(&pool, "01/10/2026", "AMAZON.COM", 20.00).await;
 
-        let output = generate_report_inner(&pool, None, None).await.unwrap();
+        let output = generate_report_inner(&pool, None, None, 1).await.unwrap();
 
         assert!(output.rows.is_empty());
         assert!(output.text.is_empty());
@@ -298,5 +306,20 @@ mod tests {
     async fn date_sort_key_orders_correctly_across_years() {
         assert!(date_sort_key("01/17/2026") > date_sort_key("12/01/2025"));
         assert!(date_sort_key("12/31/2025") < date_sort_key("01/01/2026"));
+    }
+
+    #[tokio::test]
+    async fn report_divides_amounts_by_split_count() {
+        let pool = setup_db().await;
+        insert_filter(&pool, "Coffee", "STARBUCKS").await;
+        insert_tx(&pool, "01/10/2026", "STARBUCKS A", 4.50).await;
+        insert_tx(&pool, "01/15/2026", "STARBUCKS B", 6.75).await;
+
+        let output = generate_report_inner(&pool, None, None, 2).await.unwrap();
+
+        assert_eq!(output.rows.len(), 1);
+        // 11.25 / 2 = 5.625
+        assert!((output.rows[0].total_amount - 5.625).abs() < 0.001);
+        assert!(output.text.contains("5.6"));
     }
 }

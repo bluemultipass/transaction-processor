@@ -4,6 +4,7 @@ import Nav, { type Tab } from './components/Nav';
 import TransactionsScreen from './screens/TransactionsScreen';
 import FiltersScreen from './screens/FiltersScreen';
 import ReportScreen from './screens/ReportScreen';
+import SettingsScreen from './screens/SettingsScreen';
 
 function App() {
   const [activeTab, setActiveTab] = createSignal<Tab>('transactions');
@@ -15,6 +16,7 @@ function App() {
         {activeTab() === 'transactions' && <TransactionsScreen />}
         {activeTab() === 'filters' && <FiltersScreen />}
         {activeTab() === 'report' && <ReportScreen />}
+        {activeTab() === 'settings' && <SettingsScreen />}
       </div>
     </AppStoreProvider>
   );

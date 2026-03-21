@@ -75,6 +75,22 @@ async generateReport(dateFrom: string | null, dateTo: string | null) : Promise<R
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async getSplitCount() : Promise<Result<number, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_split_count") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setSplitCount(count: number) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_split_count", { count }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
