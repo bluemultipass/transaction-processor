@@ -1,7 +1,7 @@
 import { Component } from 'solid-js';
 import { For } from 'solid-js';
 
-export type Tab = 'transactions' | 'filters' | 'report';
+export type Tab = 'transactions' | 'filters' | 'report' | 'settings';
 
 type NavProps = {
   activeTab: Tab;
@@ -12,6 +12,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'transactions', label: 'Transactions' },
   { id: 'filters', label: 'Filters' },
   { id: 'report', label: 'Report' },
+  { id: 'settings', label: 'Settings' },
 ];
 
 const Nav: Component<NavProps> = (props) => {

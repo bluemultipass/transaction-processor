@@ -1,4 +1,5 @@
 pub mod filters;
+pub mod settings;
 pub mod transactions;
 
 /// Serialize an i64 as a JSON number, returning a serde error if the value

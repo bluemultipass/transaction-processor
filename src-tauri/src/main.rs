@@ -20,6 +20,8 @@ fn main() {
         commands::filters::update_filter,
         commands::filters::delete_filter,
         commands::reports::generate_report,
+        commands::settings::get_split_count,
+        commands::settings::set_split_count,
     ]);
 
     #[cfg(debug_assertions)]

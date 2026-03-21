@@ -8,6 +8,7 @@ type AppState = {
   dateFrom: string | null;
   dateTo: string | null;
   reportOutput: ReportOutput | null;
+  splitCount: number;
 };
 
 type AppActions = {
@@ -15,6 +16,8 @@ type AppActions = {
   loadFilters: () => Promise<void>;
   setDateRange: (dateFrom: string | null, dateTo: string | null) => void;
   setReportOutput: (output: ReportOutput | null) => void;
+  loadSplitCount: () => Promise<void>;
+  updateSplitCount: (n: number) => Promise<void>;
 };
 
 type AppStoreContextValue = [AppState, AppActions];
@@ -28,6 +31,7 @@ export const AppStoreProvider: ParentComponent = (props) => {
     dateFrom: null,
     dateTo: null,
     reportOutput: null,
+    splitCount: 2,
   });
 
   const actions: AppActions = {
@@ -48,6 +52,16 @@ export const AppStoreProvider: ParentComponent = (props) => {
 
     setReportOutput: (output) => {
       setState('reportOutput', output);
+    },
+
+    loadSplitCount: async () => {
+      const result = await commands.getSplitCount();
+      if (result.status === 'ok') setState('splitCount', result.data);
+    },
+
+    updateSplitCount: async (n: number) => {
+      const result = await commands.setSplitCount(n);
+      if (result.status === 'ok') setState('splitCount', n);
     },
   };
 
